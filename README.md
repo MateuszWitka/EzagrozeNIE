@@ -1,3 +1,3 @@
 # platwyp
 
-Dynamiczna mapa ryzyka zagrożeń drogowych w czasie rzeczywistym.
+To jest plik readme.
