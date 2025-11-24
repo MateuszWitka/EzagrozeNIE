@@ -1,7 +1,7 @@
 # platwyp
 
 System przewidujący wypadki drogowe na danej trasie przejazdu. Wykorzystuje informacje m.in. o dotychczasowych wypadkach, natężeniu ruchu i warunkach pogodowych. Projekt niegotowy, prace trwają.
-Przy tworzeniu projektu udział biorą Mateusz Witkowski, Miłosz Przymusiński, Paweł Kopytek, Rafał Bartosik, Aleks Stępniak
+Przy tworzeniu projektu udział biorą Mateusz Witkowski, Miłosz Przymusiński, Paweł Kopytek, Rafał Bartosik, Aleks Stępniak.
 
 System będzie integrować dane z następujących obszarów: 
 dane historyczne o wypadkach i kolizjach drogowych 
