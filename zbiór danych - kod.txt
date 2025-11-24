@@ -1,0 +1,121 @@
+# Istotne rzeczy w pliku xml z wypadkami:
+# - <ID> to id zdarzenia
+# - <GPS_X_GUS> i <GPS_Y_GUS> to są punkty w środku miejscowości (albo gminy?) oznaczające tylko tą miejscowość a nie miejsce zdarzenia, one są takie same dla różnych zdarzeń w tej samej okolicy, to jest w postaci dziesiętnej, to jest niepotrzebne
+# - <WSP_GPS_X> i <WSP_GPS_Y> to są współrzędne miejsca zdarzenia, gwiazdka to stopnie, to jest w postaci tej takiej minutowej-sekundowej tylko przed ostatnią cyfrą chyba musi być kropka, pokrywa się z adresem i numerem domu
+# - <ULICA_ADRES> i <NUMER_DOMU> to może być adres miejsca zdarzenia
+# - <DATA_ZDARZ> i <GODZINA_ZDARZ> to czas zdarzenia
+
+
+import xml.etree.ElementTree as ET
+
+with open(r'D:\semestr zimowy 25\systemy informatyczne\ćw 4\dane\sewik\xml\2024\SEWIK_EXP_N_XML_02_WOJ__LUBUSKIE_2024.xml', encoding = 'utf8') as f:
+    file = f.read()
+
+from bs4 import BeautifulSoup
+
+soup = BeautifulSoup(file, 'xml')
+
+soup_text = soup.prettify()
+
+print(soup_text[0:2000])
+
+root = ET.fromstring(soup_text)
+
+# trzeba przekonwertować ten format minutowy na dziesiętny żeby można było policzyć dystans
+# ale najpierw trzeba zrobić tabelę z id zdarzenia, czasem i miejscem
+
+# problem, nie wszystkie zdarzenia mają koordynaty gps i root.iter() pominie te nieobecne i wektor będzie za krótki:
+len(root.findall('./ZDARZENIA/ZDARZENIE/WSP_GPS_X'))
+len(root.findall('./ZDARZENIA/ZDARZENIE')) # różne długości
+
+
+
+# najpierw szerokość geograficzna...
+
+
+
+test_vector = [None] * 10528
+n = 0
+for i in root.iter('ZDARZENIE'):
+    try:
+        test_vector[n] = i.find('WSP_GPS_X').text
+    except Exception:
+        pass
+    finally:
+        n = n + 1
+# po zainicjowaniu wektora wstawiamy do niego koordynaty kolejnych zdarzeń a jeśli nie ma koordynatów to zostaje puste pole
+# Exception podobno robi to że nie zawiera np. keyboard interrupt a samo except by zawierało
+
+import re
+
+# wyciąganie stopni:
+test_degrees = [None] * 10528
+for i in range(len(test_vector)):
+    try:
+        test_degrees[i] = int(re.findall('\n    (.*)\*', test_vector[i])[0])
+    except Exception:
+        pass
+
+# minut:
+test_minutes = [None] * 10528
+for i in range(len(test_vector)):
+    try:
+        test_minutes[i] = int(re.findall('\*(.*)\'', test_vector[i])[0])
+    except Exception:
+        pass
+
+# i sekund:
+test_seconds = [None] * 10528
+for i in range(len(test_vector)):
+    try:
+        test_seconds[i] = float(re.findall('\'(.*)\n   ', test_vector[i])[0])/10
+    except Exception:
+        pass
+# dzielenie jest po to żeby ustawić kropkę (przecinek) przed ostatnią cyfrą
+
+# i łączenie w jedne koordynaty dziesiętne:
+test_coordinates_decimal = [None] * 10528
+for i in range(len(test_coordinates_decimal)):
+    try:
+        test_coordinates_decimal[i] = test_degrees[i] + (test_seconds[i] + test_minutes[i] * 60) / 3600
+    except Exception:
+        pass
+
+
+
+
+# teraz długość geograficzna...
+# ale to później bo to będzie identycznie jak szerokość
+
+
+
+# wyciągamy id:
+id_vector = [None] * 10528
+n = 0
+for i in root.iter('ZDARZENIE'):
+    try:
+        id_vector[n] = re.findall('\n    (.*)\n', i.find('ID').text)[0]
+    except Exception:
+        pass
+    finally:
+        n = n + 1
+
+import pandas as pd
+
+# składamy w jeden dataframe:
+test_dataframe = pd.DataFrame({'id': id_vector, 'gps': test_coordinates_decimal})
+
+# to jest słaby pomysł, tego wykomentowanego jednak nie:
+# liczymy okoliczne zdarzenia:
+#test_dataframe['blisko'] = [[None]] * len(test_dataframe)
+#for i in range(len(test_dataframe)):
+#    for j in range(len(test_dataframe)):
+#        if abs(test_dataframe['gps'][i] - test_dataframe['gps'][j]) < 2/3600:
+#            test_dataframe['blisko'][i].append(test_dataframe['id'][j])
+# to 2/3600 to dwie sekundy czyli około 60 metrów
+
+# ok to trwa za długo, trzeba podzielić zbiór danych na kwadraty najpierw
+# bo tak to przeszukuje masę zupełnie niepotrzebnych wierszy o których wiadomo z góry że są za daleko i nie ma po co ich przeszukiwać
+# wtedy wszystko powyższe wykona się na małym kwadracie a nie na całym województwie
+
+# a więc tak: trzeba podzielić zbiór danych na bardzo małe kwadraty, jeszcze dodać czas podzielony na trzygodzinne jednostki, zliczyć w danym czasie ile było wypadków w danym kwadracie, a następnie w dowolnym kwadracie zrobić jakąś prognozę np. sezonową arimę - to będzie prognoza liczby wypadków w danym miejscu (kwadracie)
