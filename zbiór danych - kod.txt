@@ -32,7 +32,7 @@ len(root.findall('./ZDARZENIA/ZDARZENIE')) # różne długości, 11152 vs 11150
 number_of_rows = len(root.findall('./ZDARZENIA/ZDARZENIE'))
 
 
-# najpierw szerokość geograficzna...
+# najpierw długość geograficzna...
 
 x_vector = [None] * number_of_rows
 n = 0
@@ -98,7 +98,7 @@ for i in range(len(x_coordinates_decimal)):
 
 
 
-# teraz długość geograficzna...
+# teraz szerokość geograficzna...
 
 # wektor z nieprzetworzonymi koordynatami:
 y_vector = [None] * number_of_rows
