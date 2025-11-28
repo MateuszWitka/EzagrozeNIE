@@ -24,86 +24,182 @@ root = ET.fromstring(soup_text)
 # trzeba przekonwertować ten format minutowy na dziesiętny żeby można było policzyć dystans
 # ale najpierw trzeba zrobić tabelę z id zdarzenia, czasem i miejscem
 
-# problem, nie wszystkie zdarzenia mają koordynaty gps i root.iter() pominie te nieobecne i wektor będzie za krótki:
+# problem, nie wszystkie zdarzenia mają koordynaty gps i root.iter() pominie te nieobecne i wektor będzie za krótki (na końcu będzie miał puste):
 len(root.findall('./ZDARZENIA/ZDARZENIE/WSP_GPS_X'))
-len(root.findall('./ZDARZENIA/ZDARZENIE')) # różne długości
+len(root.findall('./ZDARZENIA/ZDARZENIE')) # różne długości, 11152 vs 11150
 
+# liczba zdarzeń, tyle będzie wierszy w dataframe'ie:
+number_of_rows = len(root.findall('./ZDARZENIA/ZDARZENIE'))
 
 
 # najpierw szerokość geograficzna...
 
-
-
-test_vector = [None] * 10528
+x_vector = [None] * number_of_rows
 n = 0
 for i in root.iter('ZDARZENIE'):
     try:
-        test_vector[n] = i.find('WSP_GPS_X').text
-    except Exception:
+        x_vector[n] = i.find('WSP_GPS_X').text
+    except AttributeError:
         pass
     finally:
         n = n + 1
 # po zainicjowaniu wektora wstawiamy do niego koordynaty kolejnych zdarzeń a jeśli nie ma koordynatów to zostaje puste pole
-# Exception podobno robi to że nie zawiera np. keyboard interrupt a samo except by zawierało
+# AttributeError to jest to że brak danych nie ma atrybutu .text
+# btw na przyszłość, jeśli byłoby Exception zamiast AttributeError to to podobno robi to że nie zawiera np. keyboard interrupt a samo except to po prostu każdy error
+# poprzednio miałem wpisane 10528 w długości wektora, nie wiem czemu, zdarzeń jest 11152
 
 import re
 
 # wyciąganie stopni:
-test_degrees = [None] * 10528
-for i in range(len(test_vector)):
+x_degrees = [None] * number_of_rows
+for i in range(len(x_vector)):
     try:
-        test_degrees[i] = int(re.findall('\n    (.*)\*', test_vector[i])[0])
-    except Exception:
+        if ('.' in x_vector[i]):
+           x_degrees[i] = float(re.findall('\n    (.*)\n', x_vector[i])[0])
+        else:
+            x_degrees[i] = int(re.findall('\n    (.*)\*', x_vector[i])[0])
+    except TypeError:
         pass
+# type error jest wtedy jak próbujemy indeksować brak danych
+# ten if z kropką jest dlatego że niektóre zdarzenia już mają wpisaną lokalizację w postaci dziesiętnej więc nie trzeba (a nawet nie da się) wyciągać osobno stopni, minut i sekund
 
 # minut:
-test_minutes = [None] * 10528
-for i in range(len(test_vector)):
+x_minutes = [None] * number_of_rows
+for i in range(len(x_vector)):
     try:
-        test_minutes[i] = int(re.findall('\*(.*)\'', test_vector[i])[0])
-    except Exception:
+        if ('.' in x_vector[i]):
+           x_minutes[i] = 0
+        else:
+            x_minutes[i] = int(re.findall('\*(.*)\'', x_vector[i])[0])
+    except TypeError:
         pass
+# jeśli mamy oryginalnie zapis dziesiętny (z kropką) to robimy zero żeby potem dodało się zero na sam koniec
 
 # i sekund:
-test_seconds = [None] * 10528
-for i in range(len(test_vector)):
+x_seconds = [None] * number_of_rows
+for i in range(len(x_vector)):
     try:
-        test_seconds[i] = float(re.findall('\'(.*)\n   ', test_vector[i])[0])/10
-    except Exception:
+        if ('.' in x_vector[i]):
+           x_seconds[i] = 0
+        else:
+            x_seconds[i] = float(re.findall('\'(.*)\n   ', x_vector[i])[0])/10
+    except TypeError:
         pass
 # dzielenie jest po to żeby ustawić kropkę (przecinek) przed ostatnią cyfrą
 
 # i łączenie w jedne koordynaty dziesiętne:
-test_coordinates_decimal = [None] * 10528
-for i in range(len(test_coordinates_decimal)):
+x_coordinates_decimal = [None] * number_of_rows
+for i in range(len(x_coordinates_decimal)):
     try:
-        test_coordinates_decimal[i] = test_degrees[i] + (test_seconds[i] + test_minutes[i] * 60) / 3600
-    except Exception:
+        x_coordinates_decimal[i] = x_degrees[i] + (x_seconds[i] + x_minutes[i] * 60) / 3600
+    except TypeError:
         pass
 
 
 
 
 # teraz długość geograficzna...
-# ale to później bo to będzie identycznie jak szerokość
 
-
-
-# wyciągamy id:
-id_vector = [None] * 10528
+# wektor z nieprzetworzonymi koordynatami:
+y_vector = [None] * number_of_rows
 n = 0
 for i in root.iter('ZDARZENIE'):
     try:
-        id_vector[n] = re.findall('\n    (.*)\n', i.find('ID').text)[0]
-    except Exception:
+        y_vector[n] = i.find('WSP_GPS_Y').text
+    except AttributeError:
         pass
     finally:
         n = n + 1
 
+y_degrees = [None] * number_of_rows
+for i in range(len(y_vector)):
+    try:
+        if ('.' in y_vector[i]):
+           y_degrees[i] = float(re.findall('\n    (.*)\n', y_vector[i])[0])
+        else:
+            y_degrees[i] = int(re.findall('\n    (.*)\*', y_vector[i])[0])
+    except TypeError:
+        pass
+
+y_minutes = [None] * number_of_rows
+for i in range(len(y_vector)):
+    try:
+        if ('.' in y_vector[i]):
+           y_minutes[i] = 0
+        else:
+            y_minutes[i] = int(re.findall('\*(.*)\'', y_vector[i])[0])
+    except TypeError:
+        pass
+
+y_seconds = [None] * number_of_rows
+for i in range(len(y_vector)):
+    try:
+        if ('.' in y_vector[i]):
+           y_seconds[i] = 0
+        else:
+            y_seconds[i] = float(re.findall('\'(.*)\n   ', y_vector[i])[0])/10
+    except TypeError:
+        pass
+
+# wektor z gotowymi koordynatami:
+y_coordinates_decimal = [None] * number_of_rows
+for i in range(len(y_coordinates_decimal)):
+    try:
+        y_coordinates_decimal[i] = y_degrees[i] + (y_seconds[i] + y_minutes[i] * 60) / 3600
+    except TypeError:
+        pass
+
+
+# teraz id i czas...
+
+
+# wyciągamy id:
+id_vector = [None] * number_of_rows
+n = 0
+for i in root.iter('ZDARZENIE'):
+    try:
+        id_vector[n] = re.findall('\n    (.*)\n', i.find('ID').text)[0]
+    except AttributeError:
+        pass
+    finally:
+        n = n + 1
+
+
+from datetime import datetime
+
+# wektor z nieprzetworzoną datą:
+date_vector = [None] * number_of_rows
+n = 0
+for i in root.iter('ZDARZENIE'):
+    try:
+        date_vector[n] = i.find('DATA_ZDARZ').text
+    except AttributeError:
+        pass
+    finally:
+        n = n + 1
+
+# wektor z nieprzetworzoną godziną:
+time_vector = [None] * number_of_rows
+n = 0
+for i in root.iter('ZDARZENIE'):
+    try:
+        time_vector[n] = i.find('GODZINA_ZDARZ').text
+    except AttributeError:
+        pass
+    finally:
+        n = n + 1
+
+# łączenie daty i godziny we wspólny wektor w czasie uniksowym:
+unix_time_vector = [None] * number_of_rows
+for i in range(len(unix_time_vector)):
+    unix_time_vector[i] = datetime.strptime(re.findall('\n    (.*)\n', date_vector[i])[0] + ',' + re.findall('\n    (.*)\n', time_vector[i])[0], '%Y-%m-%d,%H:%M:%S').timestamp()
+# usuwamy niepotrzebne spacje i entery regeksami, konwertujemy string na zmienną datetime a potem na timestamp uniksowy
+
+
 import pandas as pd
 
 # składamy w jeden dataframe:
-test_dataframe = pd.DataFrame({'id': id_vector, 'gps': test_coordinates_decimal})
+wypadki_dataframe = pd.DataFrame({'id': id_vector, 'unix_time': unix_time_vector, 'gps_x': x_coordinates_decimal, 'gps_y': y_coordinates_decimal})
 
 # to jest słaby pomysł, tego wykomentowanego jednak nie:
 # liczymy okoliczne zdarzenia:
