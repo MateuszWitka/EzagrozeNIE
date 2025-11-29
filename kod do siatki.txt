@@ -1,0 +1,100 @@
+# można zrobić korzeń w kwadracie w środku siatki i będzie znajdować arbitralny kwadrat przeszukując graf od środka aż znajdzie właściwy węzeł
+# albo można w klasie Grid zrobić jakąś tabelę węzłów i ich koordynatów i po wpisaniu koordynatów znajdywałoby odpowiedni węzeł ale nie wiem czy to ma sens
+# algorytm będzie wybierać trasę z kwadratów, łączyć te dataframe'y w nich w jeden dataframe i na tym jednym dataframe'ie będzie działał model statystyczny
+# uwaga: przy łączeniu kwadratów trzeba robić słabe i mocne nierówności żeby ewentualne wypadki na granicach nie liczyły się podwójnie
+
+# to jest klasa kwadrat, to będzie węzeł
+# y i x to koordynaty granic województwa - szerokość i długość, najpierw południe, potem północ, najpierw zachód, potem wschód, dalsze kierunki to sąsiednie kwadraty:
+
+class Square:
+
+    def __init__(self, data = None, y = [None, None], x = [None, None], down = None, up = None, left = None, right = None):
+        self.data = data
+        self.y = y
+        self.x = x
+        self.down = down
+        self.up = up
+        self.left = left
+        self.right = right
+
+
+# jedna sekunda zapisana dziesiętne to 1/3600 = 0.0002777777777777778
+# możemy zaokrąglić do 0.0003, parę metrów nie zrobi różnicy
+# widzę w posortowanym dataframe'ie że są zdarzenia (wiersze) o różnym id które mają dokładnie identyczne współrzędne w obu wymiarach albo różnią się dopiero piątym miejscem po przecinku w obu wymiarach więc dokładność do czwartego miejsca po przecinku przesadna raczej nie będzie
+
+
+# to jest klasa siatka:
+
+class Grid:
+
+    def __init__(self, data = None, unit = None, y = [None, None], x = [None, None], down = None, up = None, left = None, right = None):
+        self.data = data
+# data to będzie dataframe ze zdarzeniami z całego województwa
+        self.unit = unit
+# unit to granulacja danych, najmniejsza jednostka tzn. bok jednego kwadratu dziesiętnie
+        self.y = y
+        self.x = x
+        self.up = down
+        self.down = up
+        self.left = left
+        self.right = right
+        self.root = Square(y = [(self.y[0] + self.y[1])/2 - self.unit/2, (self.y[0] + self.y[1])/2 + self.unit/2], x = [(self.x[0] + self.x[1])/2 - self.unit/2, (self.x[0] + self.x[1])/2 + self.unit/2])
+# korzeń to jest środek województwa (średnia z wymiaru) plus minus pół sekundy czyli środkowy kwadrat jedna sekunda kwadratowa powierzchni
+
+#    def build_grid(self):
+#        current = self.root
+#        while (current.x[1] < self.x[1]):
+#            new = Square(y = current.y, x = [current.x[0] + self.unit, current.x[1] + self.unit])
+#            new.left = current
+#            current.right = new
+#            current = new
+
+# tu jest sam pasek poziomy, tworzymy nowe węzły coraz bardziej w prawo
+# teraz dodaję paski pionowe...
+# (uwaga: te pionowe trzeba będzie dodatkowo jeszcze połączyć poziomo ze sobą)
+
+    def build_grid(self, n = 0):
+        current_horizontal = self.root
+        while (current_horizontal.x[1] < self.x[1]):
+            n = n + 1
+            new_horizontal = Square(y = current_horizontal.y, x = [current_horizontal.x[0] + self.unit, current_horizontal.x[1] + self.unit])
+            new_horizontal.left = current_horizontal
+            current_horizontal.right = new_horizontal
+            current_vertical = current_horizontal # tu zaczynamy tworzyć węzły w pionie
+            while (current_vertical.y[1] < self.y[1]):
+                new_vertical = Square(x = current_vertical.x, y = [current_vertical.y[0] + self.unit, current_vertical.y[1] + self.unit])
+                new_vertical.down = current_vertical
+                current_vertical.up = new_vertical
+                current_vertical = new_vertical
+            if (n%50 == 0):
+                print(n)
+            current_horizontal = new_horizontal # a tu przesuwamy się do nowego węzła poziomego
+
+
+# inicjowanie i testowanie siatki:
+
+test_grid = Grid(y = [51.36333333333334, 53.12388888888889], x = [14.534166666666668, 16.416666666666668], unit = 1/3600)
+test_grid.build_grid()
+
+test_current = test_grid.root
+n = 0
+while (test_current.x[1] < test_grid.x[1]):
+    n = n + 1
+    if (n%100 == 0):
+        print(n)
+    test_current = test_current.right
+
+
+
+
+# granice województwa lubuskiego (z wikipedii) to:
+# 51°21′48″ = 51.36333333333334 południe
+# 53°07′26″ = 53.12388888888889 północ
+# 14°32′03″ = 14.534166666666668 zachód
+# 16°25′00″ = 16.416666666666668 wschód
+
+# btw tutaj jest funkcja konwertująca koordynaty na dziesiętne:
+import re
+coordinates = ''
+int(re.findall('(.*)\°', coordinates)[0]) + (int(re.findall('\°(.*)\′', coordinates)[0]) * 60 + int(re.findall('\′(.*)\″', coordinates)[0])) / 3600
+

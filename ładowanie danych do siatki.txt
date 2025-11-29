@@ -1,0 +1,48 @@
+# to jest z wczytaną siatką i plikiem csv
+
+# tutaj przeglądałem różne koordynaty...
+
+# x = 15.427107
+# y = 52.207070
+
+# x = 15.496056
+# y = 52.249806
+
+
+# x = 15.487722
+# y = 52.251389
+
+# x = 15.487444
+# y = 52.251583
+
+# x = 15.487389
+# y = 52.253472
+
+
+# x = 15.479389
+# y = 52.253111
+			# te dwa są trzynaście pól w prawo od korzenia i 33 w górę
+# x = 15.479333
+# y = 52.253111
+
+# x = 15.479083
+# y = 52.253528
+
+# x = 15.478833
+# y = 52.253667
+
+# x = 15.478639
+# y = 52.253333
+
+
+current_square = test_grid.root
+
+for i in range(14):
+    next_square = current_square.right
+    current_square = next_square
+
+for i in range(34):
+    next_square = current_square.up
+    current_square = next_square
+
+current_square.data = dataframe[(dataframe['gps_x'] <= current_square.x[1]) & (dataframe['gps_x'] > current_square.x[0]) & (dataframe['gps_y'] <= current_square.y[1]) & (dataframe['gps_y'] > current_square.y[0])]
