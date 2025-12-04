@@ -66,7 +66,7 @@ class Grid:
                 new_vertical.down = current_vertical
                 current_vertical.up = new_vertical
                 current_vertical = new_vertical
-            if (n%50 == 0):
+            if (n%100 == 0):
                 print(n)
             current_horizontal = new_horizontal # a tu przesuwamy się do nowego węzła poziomego
 
@@ -98,3 +98,58 @@ import re
 coordinates = ''
 int(re.findall('(.*)\°', coordinates)[0]) + (int(re.findall('\°(.*)\′', coordinates)[0]) * 60 + int(re.findall('\′(.*)\″', coordinates)[0])) / 3600
 
+
+# teraz tworzenie skośnych ścieżek...
+# (w sensie uzupełnianie brakujących krawędzi między węzłami)
+
+# tworzenie listy kwadratów na prawo od korzenia:
+horizontal_list = list()
+current_horizontal = test_grid.root
+while (current_horizontal.x[1] < test_grid.x[1]):
+    horizontal_list.append(current_horizontal)
+    current_horizontal = current_horizontal.right
+
+# granice się zgadzają:
+horizontal_list[-1].x
+test_grid.x
+
+
+# to jest nieaktualna wersja:
+
+#current_vertical = test_grid.root # przywracamy current_vertical do pozycji wyjściowej
+#while (current_vertical.y[1] < test_grid.y[1]):
+#    for i in range(1, len(horizontal_list) - 1):
+## pierwszy kwadrat nie ma sąsiada z lewej więc nie istnieje horizontal_list[i - 1] więc zaczynamy od drugiego kwadratu
+#        horizontal_list[i - 1].right = horizontal_list[i]
+#        horizontal_list[i].left = horizontal_list[i - 1]
+## teraz podwyższymy poziom o jeden kwadrat (na północ):
+#    current_vertical = current_vertical.up
+#    for i in range(len(horizontal_list)):
+#        horizontal_list[i] = horizontal_list[i].up
+## tak nie można zrobić, trzeba użyć vertical_list
+## albo skopiować horizontal_list do innej zmiennej ale wszystko zrobić .up, usunąć horizontal_list i zmienic nazwę nowej zmiennej na horizontal_list
+
+#vertical_list = list()
+#current_vertical = test_grid.root
+#while (current_vertical.y[1] < test_grid.y[1]):
+#    vertical_list.append(current_vertical)
+#    current_vertical = current_vertical.up
+## tego ostatecznie nie wykorzystałem
+
+# to jest aktualna wersja:
+
+current_vertical = test_grid.root
+n = 0
+while (current_vertical.y[1] < test_grid.y[1]): # to jest nasz warunek, wysokość
+    n = n + 1
+    for i in range(1, len(horizontal_list) - 1):
+# pierwszy kwadrat nie ma sąsiada z lewej więc nie istnieje horizontal_list[i - 1] więc zaczynamy od drugiego kwadratu
+        horizontal_list[i - 1].right = horizontal_list[i]
+        horizontal_list[i].left = horizontal_list[i - 1]
+    current_vertical = current_vertical.up # idziemy poziom wyżej w warunku
+    if (n%50 == 0):
+        print(n)
+    horizontal_list_up = list()
+    for j in horizontal_list: # idziemy poziom wyżej w liście poziomej
+        horizontal_list_up.append(j.up)
+    horizontal_list = horizontal_list_up
