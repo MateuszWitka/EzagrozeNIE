@@ -1,0 +1,207 @@
+class Square:
+
+    def __init__(self, data = None, y = [None, None], x = [None, None], down = None, up = None, left = None, right = None):
+        self.data = data
+        self.y = y
+        self.x = x
+        self.down = down
+        self.up = up
+        self.left = left
+        self.right = right
+
+
+
+class Grid:
+
+    def __init__(self, data = None, unit = None, y = [None, None], x = [None, None], down = None, up = None, left = None, right = None):
+        self.data = data # to będzie dataframe ze zdarzeniami z całego województwa
+        self.unit = unit # granulacja danych, najmniejsza jednostka tzn. bok jednego kwadratu dziesiętnie
+        self.y = y
+        self.x = x
+        self.up = down
+        self.down = up
+        self.left = left
+        self.right = right
+        self.root = Square(y = [(self.y[0] + self.y[1])/2 - self.unit/2, (self.y[0] + self.y[1])/2 + self.unit/2], x = [(self.x[0] + self.x[1])/2 - self.unit/2, (self.x[0] + self.x[1])/2 + self.unit/2]) # środek siatki
+
+    def build_base_right(self):
+        print('\n\nPrawa połowa\n')
+        n_current = 0 # wszystkie zmienne n_cośtam są tylko do liczenia postępu funkcji
+        n_percent = 0
+        print('0%')
+        n_total = (self.x[1] - self.x[0]) / 2
+
+        current_horizontal = self.root # zaczynamy tworzyć węzły na prawo od korzenia
+        while (current_horizontal.x[1] < self.x[1]): # warunkiem w jest prawa granica siatki
+            n_current = n_current + self.unit # odhaczamy kolejny kwadrat w liczniku postępu
+            n_percent_new = int(n_current * 100 / n_total)
+            new_horizontal = Square(y = current_horizontal.y, x = [current_horizontal.x[0] + self.unit, current_horizontal.x[1] + self.unit]) # tworzymy kolejny kwadrat z prawej strony
+            new_horizontal.left = current_horizontal
+            current_horizontal.right = new_horizontal
+
+            current_vertical = current_horizontal # tu zaczynamy tworzyć węzły w górę
+            while (current_vertical.y[1] < self.y[1]): # warunek, górna granica siatki
+                new_vertical = Square(x = current_vertical.x, y = [current_vertical.y[0] + self.unit, current_vertical.y[1] + self.unit])
+                new_vertical.down = current_vertical
+                current_vertical.up = new_vertical
+                current_vertical = new_vertical
+            current_vertical = current_horizontal # tu zaczynamy tworzyć węzły w dół
+            while (current_vertical.y[0] > self.y[0]):
+                new_vertical = Square(x = current_vertical.x, y = [current_vertical.y[0] - self.unit, current_vertical.y[1] - self.unit])
+                new_vertical.up = current_vertical
+                current_vertical.down = new_vertical
+                current_vertical = new_vertical
+
+            if (n_percent_new > n_percent and n_percent_new%5 == 0):
+                print(f'{n_percent_new}%')
+            n_percent = n_percent_new
+            current_horizontal = new_horizontal # przechodzimy do nowego kwadratu z prawej
+
+    def build_base_left(self):
+
+        print('\n\nLewa połowa\n')
+        n_current = 0
+        n_percent = 0
+        print('0%')
+        n_total = (self.x[1] - self.x[0]) / 2
+
+        current_horizontal = self.root
+        while (current_horizontal.x[0] > self.x[0]):
+            n_current = n_current + self.unit
+            n_percent_new = int(n_current * 100 / n_total)
+            new_horizontal = Square(y = current_horizontal.y, x = [current_horizontal.x[0] - self.unit, current_horizontal.x[1] - self.unit]) # tworzymy nowy węzeł z lewej
+            new_horizontal.right = current_horizontal
+            current_horizontal.left = new_horizontal
+
+            current_vertical = current_horizontal # tu zaczynamy tworzyć węzły w górę
+            while (current_vertical.y[1] < self.y[1]):
+                new_vertical = Square(x = current_vertical.x, y = [current_vertical.y[0] + self.unit, current_vertical.y[1] + self.unit])
+                new_vertical.down = current_vertical
+                current_vertical.up = new_vertical
+                current_vertical = new_vertical
+            current_vertical = current_horizontal # tu zaczynamy tworzyć węzły w dół
+            while (current_vertical.y[0] > self.y[0]):
+                new_vertical = Square(x = current_vertical.x, y = [current_vertical.y[0] - self.unit, current_vertical.y[1] - self.unit])
+                new_vertical.up = current_vertical
+                current_vertical.down = new_vertical
+                current_vertical = new_vertical
+
+            if (n_percent_new > n_percent and n_percent_new%5 == 0):
+                print(f'{n_percent_new}%')
+            n_percent = n_percent_new
+            current_horizontal = new_horizontal
+
+    def build_fill_in_right(self):
+
+        print('\nUzupełnianie prawej strony:\n')
+
+# tworzenie list poziomych, one przechowują węzły do połączenia w poziomie:
+
+        horizontal_list = list()
+        current_horizontal = self.root
+        while (current_horizontal.x[1] < self.x[1]):
+            horizontal_list.append(current_horizontal)
+            current_horizontal = current_horizontal.right
+
+        horizontal_list_up = list() # to będzie do uzupełniania krawędzi w górnej ćwiartce
+        for i in horizontal_list:
+             horizontal_list_up.append(i.up)
+        horizontal_list_down = list() # to będzie do uzupełniania krawędzi w dolnej ćwiartce
+        for i in horizontal_list:
+            horizontal_list_down.append(i.down)
+
+# uzupełnianie krawędzi:
+
+        print('0%')
+        current_vertical = self.root
+        n_current = 0
+        n_percent = 0
+        n_total = (self.y[1] - self.y[0])/2 # połowy siatki są symetryczne więc nieważne która
+
+        while (current_vertical.y[1] < self.y[1]): # to jest nasz warunek, wysokość siatki
+            n_current = n_current + self.unit
+            n_percent_new = int(n_current * 100 / n_total)
+            for i in range(1, len(horizontal_list) - 1):
+# pierwszy kwadrat nie ma sąsiada z lewej więc nie istnieje horizontal_list[i - 1] więc zaczynamy od drugiego kwadratu
+                horizontal_list_up[i - 1].right = horizontal_list_up[i]
+                horizontal_list_up[i].left = horizontal_list_up[i - 1]
+                horizontal_list_down[i - 1].right = horizontal_list_down[i]
+                horizontal_list_down[i].left = horizontal_list_down[i - 1]
+            current_vertical = current_vertical.up # idziemy poziom wyżej w warunku, nie musi być osobnej zmiennej z .down bo połówki są symetryczne
+            if (n_percent_new > n_percent and n_percent_new%5 == 0):
+                print(f'{n_percent_new}%')
+            n_percent = n_percent_new
+
+            horizontal_list_up_new = list()
+            horizontal_list_down_new = list()
+            for j in horizontal_list_up: # idziemy poziom wyżej w liście poziomej
+                horizontal_list_up_new.append(j.up)
+            for j in horizontal_list_down: # idziemy niżej w drugiej liście poziomej
+                horizontal_list_down_new.append(j.down)
+            horizontal_list_up = horizontal_list_up_new
+            horizontal_list_down = horizontal_list_down_new
+
+    def build_fill_in_left(self):
+
+        print('\nUzupełnianie lewej strony:\n')
+
+# tworzenie list poziomych:
+
+        horizontal_list = list()
+        current_horizontal = self.root
+        while (current_horizontal.x[0] > self.x[0]):
+            horizontal_list.append(current_horizontal)
+            current_horizontal = current_horizontal.left
+
+        horizontal_list_up = list()
+        for i in horizontal_list:
+            horizontal_list_up.append(i.up)
+        horizontal_list_down = list()
+        for i in horizontal_list:
+            horizontal_list_down.append(i.down)
+
+# uzupełnianie krawędzi:
+
+        print('0%')
+        current_vertical = self.root
+        n_current = 0
+        n_percent = 0
+        n_total = (self.y[1] - self.y[0])/2 # połowy siatki są symetryczne
+
+        while (current_vertical.y[1] < self.y[1]): # to jest nasz warunek, wysokość
+            n_current = n_current + self.unit
+            n_percent_new = int(n_current * 100 / n_total)
+            for i in range(1, len(horizontal_list) - 1):
+                horizontal_list_up[i - 1].left = horizontal_list_up[i]
+                horizontal_list_up[i].right = horizontal_list_up[i - 1]
+                horizontal_list_down[i - 1].left = horizontal_list_down[i] # tu chyba był ten błąd, było _up[i], w wersji dla prawej strony było tak samo, też poprawiłem
+                horizontal_list_down[i].right = horizontal_list_down[i - 1]
+            current_vertical = current_vertical.up
+            if (n_percent_new > n_percent and n_percent_new%5 == 0):
+                print(f'{n_percent_new}%')
+            n_percent = n_percent_new
+
+            horizontal_list_up_new = list()
+            horizontal_list_down_new = list()
+            for i in horizontal_list_up: 
+                horizontal_list_up_new.append(i.up)
+            for i in horizontal_list_down: 
+                horizontal_list_down_new.append(i.down)
+            horizontal_list_up = horizontal_list_up_new
+            horizontal_list_down = horizontal_list_down_new
+
+    def build_grid(self):
+
+        print('\nPodstawa i krawędzie pionowe:\n')
+        self.build_base_right()
+        self.build_base_left()
+        print('\nUzupełnianie krawędzi poziomych:\n')
+        self.build_fill_in_right()
+        self.build_fill_in_left()
+
+
+
+
+test_grid = Grid(y = [51.36333333333334, 53.12388888888889], x = [14.534166666666668, 16.416666666666668], unit = 1/3600)
+
+test_grid.build_grid()
