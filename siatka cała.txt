@@ -193,10 +193,10 @@ class Grid:
 
     def build_grid(self):
 
-        print('\nPodstawa i krawędzie pionowe:\n')
+        print('\nPodstawa i krawędzie pionowe:')
         self.build_base_right()
         self.build_base_left()
-        print('\nUzupełnianie krawędzi poziomych:\n')
+        print('\n\nUzupełnianie krawędzi poziomych:')
         self.build_fill_in_right()
         self.build_fill_in_left()
 
