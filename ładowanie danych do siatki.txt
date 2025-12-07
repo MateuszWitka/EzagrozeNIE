@@ -46,3 +46,64 @@ for i in range(34):
     current_square = next_square
 
 current_square.data = dataframe[(dataframe['gps_x'] <= current_square.x[1]) & (dataframe['gps_x'] > current_square.x[0]) & (dataframe['gps_y'] <= current_square.y[1]) & (dataframe['gps_y'] > current_square.y[0])]
+
+
+######################################################################
+# to było tylko do pierwszego dema
+
+
+
+# tutaj ładowanie całego csv do całej siatki:
+
+
+# wczytujemy dataframe i sortujemy po szerokości:
+import pandas as pd
+data = pd.read_csv('j:\Desktop\systemy informatyczne\ćw 8\wypadki_lubuskie_2024.csv', index_col = 0)
+data.sort_values('gps_x', inplace = True)
+
+# tu są wszystkie wiersze (kilkanaście) które wychodzą poza obręb siatki (jeden jest nawet w Warszawie a to jest Lubuskie):
+data[(data.gps_x < test_grid.x[0]) | (data.gps_x > test_grid.x[1]) | (data.gps_y < test_grid.y[0]) | (data.gps_y > test_grid.y[1])]
+
+# usuwamy je:
+data.drop(data[(data.gps_x < test_grid.x[0]) | (data.gps_x > test_grid.x[1]) | (data.gps_y < test_grid.y[0]) | (data.gps_y > test_grid.y[1])].index, inplace = True)
+
+# resetujemy indeksy wierszy żeby nie przeskakiwały o dwa tam gdzie usunęliśmy:
+data.reset_index(inplace = True)
+
+# kopiowanie z dataframe'u do siatki:
+current_square = test_grid.root
+n = 0
+for i in range(len(data)):
+    while ((data['gps_x'][i] < current_square.x[0]) | (data['gps_x'][i] > current_square.x[1]) | (data['gps_y'][i] < current_square.y[0]) | (data['gps_y'][i] > current_square.y[1])):
+        if (data['gps_x'][i] < current_square.x[0]):
+            current_square = current_square.left
+        elif (data['gps_x'][i] > current_square.x[1]):
+            current_square = current_square.right
+        if (data['gps_y'][i] < current_square.y[0]):
+            current_square = current_square.down
+        elif (data['gps_y'][i] > current_square.y[1]):
+            current_square = current_square.up
+    if (current_square.data is None): # == None zwraca dataframe z wartościami logicznymi dla każdej kolumny a is zwraca pojedynczą wartość więc tu musi być is
+        current_square.data = data.loc[[i]]
+    else:
+        current_square.data = pd.concat([current_square.data, data.loc[[i]]], ignore_index = True)
+    n = n + 1
+    if (n%25 == 0):
+        print(n)
+
+
+# btw szukanie kwadratu po indeksie z dataframe'u:
+current_square = test_grid.root
+while (current_square.x[0] > data['gps_x'][13]):
+    current_square = current_square.left
+while (current_square.y[1] < data['gps_y'][13]):
+    current_square = current_square.up
+# tylko trzeba zmienić zależnie czy większe czy mniejsze
+
+# albo w jednej pętli:
+current_square = test_grid.root
+while (current_square.x[0] > data['gps_x'][30000] or current_square.y[1] < data['gps_y'][30000]):
+    if (current_square.x[0] > data['gps_x'][30000]):
+        current_square = current_square.left
+    if (current_square.y[1] < data['gps_y'][30000]):
+        current_square = current_square.up
