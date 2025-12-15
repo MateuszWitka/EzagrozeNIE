@@ -1,0 +1,152 @@
+# to działa źle, pomija niektóre obserwacje a inne wstawia kilkakrotnie
+# update: tam w środku tego pliku jest króka wersja tej pętli która chyba działa poprawnie
+# tylko że ona jest taka bardziej łopatologiczna, przeszukuje na około a nie po skosie
+
+# list_of_squares = [[x1_left, x1_right, y1_down, y1_up], [x2_left, x2_right, y2_down, y2_up], ...]
+
+# tutaj jest ta lista z csv do testowania:
+list_of_squares = list()
+for i in range(500):
+    list_of_squares.append([data['gps_x'][i], data['gps_y'][i]])
+
+# list_of_points = [[x1, y1], [x2, y2], [x3, y3], ...]
+
+import pandas as pd
+
+# inicjalizacja pustego dataframe'u:
+full_dataframe = pd.DataFrame({'id': [], 'unix_time': [], 'gps_x': [], 'gps_y': []})
+
+# dostawianie danych z niekoniecznie sąsiednich kwadratów (z listą kwadratów):
+current_square = test_grid.root
+for i in list_of_squares:
+    if (current_square.x[0] > i[1] and current_square.y[0] > i[3]):
+        while (current_square.x[0] > i[1] or current_square.y[0] > i[3]):
+            if (current_square.x[0] > i[1]):
+                current_square = current_square.left
+            if (current_square.y[0] > i[3]):
+                current_square = current_square.down
+    elif (current_square.x[0] > i[1] and current_square.y[1] < i[2]):
+        while (current_square.x[0] > i[1] or current_square.y[1] < i[2]):
+            if (current_square.x[0] > i[1]):
+                current_square = current_square.left
+            if (current_square.y[1] < i[2]):
+                current_square = current_square.up
+    elif (current_square.x[1] < i[0] and current_square.y[0] > i[3]):
+        while (current_square.x[1] < i[0] or current_square.y[0] > i[3]):
+            if (current_square.x[1] < i[0]):
+                current_square = current_square.right
+            if (current_square.y[0] > i[3]):
+                current_square = current_square.down
+    elif (current_square.x[1] < i[0] and current_square.y[1] < i[2]):
+        while (current_square.x[1] < i[0] or current_square.y[1] < i[2]):
+            if (current_square.x[1] < i[0]):
+                current_square = current_square.right
+            if (current_square.y[1] < i[2]):
+                current_square = current_square.up
+    if (current_square.data is not None):
+        full_dataframe = pd.concat([full_dataframe, current_square.data], ignore_index = True)
+
+# dostawianie danych z niekoniecznie sąsiednich kwadratów (z listą punktów):
+current_square = test_grid.root
+for i in list_of_squares:
+    if (current_square.x[0] > i[0] and current_square.y[0] > i[1]):
+        while (current_square.x[0] > i[0] or current_square.y[0] > i[1]):
+            if (current_square.x[0] > i[0]):
+                current_square = current_square.left
+            if (current_square.y[0] > i[1]):
+                current_square = current_square.down
+    elif (current_square.x[0] > i[0] and current_square.y[1] < i[1]):
+        while (current_square.x[0] > i[0] or current_square.y[1] < i[1]):
+            if (current_square.x[0] > i[0]):
+                current_square = current_square.left
+            if (current_square.y[1] < i[1]):
+                current_square = current_square.up
+    elif (current_square.x[1] < i[0] and current_square.y[0] > i[1]):
+        while (current_square.x[1] < i[0] or current_square.y[0] > i[1]):
+            if (current_square.x[1] < i[0]):
+                current_square = current_square.right
+            if (current_square.y[0] > i[1]):
+                current_square = current_square.down
+    elif (current_square.x[1] < i[0] and current_square.y[1] < i[1]):
+        while (current_square.x[1] < i[0] or current_square.y[1] < i[1]):
+            if (current_square.x[1] < i[0]):
+                current_square = current_square.right
+            if (current_square.y[1] < i[1]):
+                current_square = current_square.up
+    if (current_square.data is not None):
+        full_dataframe = pd.concat([full_dataframe, current_square.data], ignore_index = True)
+
+# to samo ale inaczej (TO DZIAŁA CHYBA DOBRZE):
+current_square = test_grid.root
+for i in list_of_squares:
+    while (current_square.x[0] > i[0]):
+        current_square = current_square.left
+    while (current_square.x[1] < i[0]):
+        current_square = current_square.right
+    while (current_square.y[0] > i[1]):
+        current_square = current_square.down
+    while (current_square.y[1] < i[1]):
+        current_square = current_square.up
+    if (current_square.data is not None):
+        full_dataframe = pd.concat([full_dataframe, current_square.data], ignore_index = True)
+
+
+# dostawianie danych z sąsiednich kwadratów (z listą kwadratów):
+
+# znajdujemy pierwszy kwadrat:
+current_square = test_grid.root
+if (current_square.x[0] > list_of_squares[1][1]):
+    while (current_square.x[0] > list_of_squares[1][1]):
+        current_square = current_square.left
+else:
+    while (current_square.x[1] < list_of_squares[1][0]):
+        current_square = current_square.right
+if (current_square.y[0] > list_of_squares[1][3]):
+    while (current_square.y[0] > list_of_squares[1][3]):
+        current_square = current_square.down
+else:
+    while (current_square.y[1] < list_of_squares[1][2]):
+        current_square = current_square.up
+
+# i przechodzimy do sąsiednich po jednym:
+for i in list_of_squares:
+    if (current_square.x[0] > i[1]):
+        current_square = current_square.left
+    elif (current_square.x[1] < i[0]):
+        current_square = current_square.right
+    if (current_square.y[0] > i[3]):
+        current_square = current_square.down
+    elif (current_square.y[1] < i[2]):
+        current_square = current_square.up
+    if (current_square.data is not None):
+        full_dataframe = pd.concat([full_dataframe, current_square.data], ignore_index = True)
+
+# dostawianie danych z sąsiednich kwadratów (z listą punktów):
+
+# znajdujemy pierwszy kwadrat:
+current_square = test_grid.root
+if (current_square.x[0] > list_of_squares[1][0]):
+    while (current_square.x[0] > list_of_squares[1][0]):
+        current_square = current_square.left
+else:
+    while (current_square.x[1] < list_of_squares[1][0]):
+        current_square = current_square.right
+if (current_square.y[0] > list_of_squares[1][1]):
+    while (current_square.y[0] > list_of_squares[1][1]):
+        current_square = current_square.down
+else:
+    while (current_square.y[1] < list_of_squares[1][1]):
+        current_square = current_square.up
+
+# i przechodzimy do sąsiednich po jednym:
+for i in list_of_squares:
+    if (current_square.x[0] > i[0]):
+        current_square = current_square.left
+    elif (current_square.x[1] < i[0]):
+        current_square = current_square.right
+    if (current_square.y[0] > i[1]):
+        current_square = current_square.down
+    elif (current_square.y[1] < i[1]):
+        current_square = current_square.up
+    if (current_square.data is not None):
+        full_dataframe = pd.concat([full_dataframe, current_square.data], ignore_index = True)
