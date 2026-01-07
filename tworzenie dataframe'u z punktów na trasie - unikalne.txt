@@ -1,0 +1,73 @@
+# tu przechodzimy osobno i na około do pierwszego punktu na liście:
+current_square = test_grid.root
+if (current_square.x[0] > list_of_points[0]['x']):
+    while (current_square.x[0] > list_of_points[0]['x']):
+        current_square = current_square.left
+else:
+    while (current_square.x[1] < list_of_points[0]['x']):
+        current_square = current_square.right
+if (current_square.y[0] > list_of_points[0]['y']):
+    while (current_square.y[0] > list_of_points[0]['y']):
+        current_square = current_square.down
+else:
+    while (current_square.y[1] < list_of_points[0]['y']):
+        current_square = current_square.up
+
+import pandas as pd
+
+# inicjalizacja pustego dataframe'u:
+full_dataframe = pd.DataFrame({'id': [], 'unix_time': [], 'gps_x': [], 'gps_y': []})
+
+import math
+
+for i in range(len(list_of_points) - 1):
+
+    rise = list_of_points[i + 1]['y'] - list_of_points[i]['y']
+    run = list_of_points[i + 1]['x'] - list_of_points[i]['x']
+    euc_distance = math.sqrt(rise*rise + run*run)
+    distance_ratio = euc_distance / test_grid.unit
+    temp_points = [None] * (math.floor(distance_ratio) + 2)
+    temp_points[0] = list_of_points[i] # pierwszym punktem pośrednim jest oryginalny punkt przy którym aktualnie jesteśmy
+
+# tworzymy punkty pośrednie:
+    for j in range(len(temp_points) - 1):
+        temp_points[j + 1] = {'x': temp_points[j]['x'] + run * test_grid.unit / euc_distance, 'y': temp_points[j]['y'] + rise * test_grid.unit / euc_distance}
+# przesunięcia są wystandaryzowane tak żeby długość całego wektora przesunięcia wynosiła wartość unit, to oznacza że ani samo przesunięcie poziome ani samo pionowe nie będzie większe od unit
+    temp_points[-1] = list_of_points[i + 1] # ostatnim pośrednim punktem jest kolejny oryginalny
+
+# idziemy po kolei po pośrednich węzłach (możemy iść po jednym bez pętli while bo odległości posrednich węzłów nigdy nie przekraczają rozmiaru jednego kwadratu czyli unit):
+    for j in temp_points:
+        new_square_1 = current_square # to można przenieść przed pętlę
+        if (j['x'] < current_square.x[0]):
+            new_square_1 = current_square.left
+            if (new_square_1.data is not None):
+                full_dataframe = pd.concat([full_dataframe, new_square_1.data], ignore_index = True)
+        elif (j['x'] > current_square.x[1]):
+            new_square_1 = current_square.right
+            if (new_square_1.data is not None):
+                full_dataframe = pd.concat([full_dataframe, new_square_1.data], ignore_index = True)
+        else:
+            pass
+# tutaj jest podwójna trawersacja po to żeby pokryć obie możliwości na skos: najpierw w bok a potem w górę i najpierw w górę a potem w bok, każda z nich potencjalnie pomija jeden kwadrat przez który ta druga przechodzi, new_square_2 jest tym uzupełnieniem tego co new_square_1 może pominąć, po każdym jednym ruchu (w górę lub w bok) zapisujemy dane do datafrejmu (jeśli new_square_1 nie pokrywa się z new_square_2, inaczej byłyby powtórzenia kiedy poruszamy się jedynie w pionie):
+        if (j['y'] < current_square.y[0]):
+            new_square_1 = new_square_1.down
+            if (new_square_1.data is not None):
+                full_dataframe = pd.concat([full_dataframe, new_square_1.data], ignore_index = True)
+            new_square_2 = current_square.down
+            if (new_square_2.data is not None and new_square_1 != new_square_2):
+                full_dataframe = pd.concat([full_dataframe, new_square_2.data], ignore_index = True)
+        elif (j['y'] > current_square.y[1]):
+            new_square_1 = new_square_1.up
+            if (new_square_1.data is not None):
+                full_dataframe = pd.concat([full_dataframe, new_square_1.data], ignore_index = True)
+            new_square_2 = current_square.up
+            if (new_square_2.data is not None and new_square_1 != new_square_2):
+                full_dataframe = pd.concat([full_dataframe, new_square_2.data], ignore_index = True)
+        else:
+            pass
+# połączyłem new_square_1 i new_square_2 w tym samym ifie żeby nie robić osobnych ifów dla obu, tak mamy przejście w pionie jako drugie (po poziomym) dla new_square_1 i uzupełniające dla new_square_2 (samo w pionie, potem w poziomie jako drugie już nie bo wtedy dojdziemy do tego kwadratu w którym new_square_1 i tak już jest i to się pokryje tylko)
+        current_square = new_square_1
+
+
+# usuwanie duplikatów:
+full_dataframe.drop_duplicates(inplace = True, ignore_index = True)
