@@ -1,0 +1,22 @@
+import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
+
+# ten kod jest przystosowany do pliku .gpx z graphhoppera, inne systemy będą pewnie miały inną treść tego pliku np. namespace
+
+with open(r'C:\Users\Lenovo\Downloads\GraphHopper-Track-2026-01-04-7km.gpx', encoding = 'utf8') as f:
+    file = f.read()
+
+soup = BeautifulSoup(file, 'xml')
+
+root = ET.fromstring(soup.prettify())
+# tworzene korzenia można tylko po prettify()
+
+# inicjalizacja pustej listy:
+list_of_points = [None] * len(root.findall('./{http://www.topografix.com/GPX/1/1}trk/{http://www.topografix.com/GPX/1/1}trkseg/{http://www.topografix.com/GPX/1/1}trkpt'))
+# to http w klamrowym to domyślny namespace (xmlns bez nazwy z dwukropkiem), musi być przed każdym elementem, inaczej funkcja nie wie o co chodzi
+
+# wstawianie kolejnych punktów na trasie do pustej listy:
+n = 0
+for i in root.iter('{http://www.topografix.com/GPX/1/1}trkpt'):
+    list_of_points[n] = {'y': float(i.attrib['lat']), 'x': float(i.attrib['lon'])}
+    n = n + 1
