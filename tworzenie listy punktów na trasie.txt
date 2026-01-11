@@ -20,3 +20,11 @@ n = 0
 for i in root.iter('{http://www.topografix.com/GPX/1/1}trkpt'):
     list_of_points[n] = {'y': float(i.attrib['lat']), 'x': float(i.attrib['lon'])}
     n = n + 1
+
+# oczekiwana liczba minut podróży:
+time = 0
+for i in root.iter('{https://graphhopper.com/public/schema/gpx/1.1}time'):
+    time = time + float(i.text)
+time = time / 60000
+
+# pomnożyć końcowe prawdopodobieństwo wypadku przez stosunek oczekiwanego czasu podróży do rozpiętości jednostki czasu w której się znajdujemy?
