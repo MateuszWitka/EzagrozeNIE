@@ -1,0 +1,52 @@
+import pandas as pd
+
+import datetime
+# jesli zrobimy from datetime import datetime to wszędzie tam gdzie jest fromtimestamp() musimy usunąć jedno datetime, ale do date() później potrzeba samego datetime a nie datetime from datetime
+
+# to były dane do testowania:
+#data = pd.read_csv(r'C:\Users\Lenovo\Desktop\systemy informatyczne\ćw 7\wypadki_lubuskie_2024.csv', index_col = 0)
+
+full_dataframe.drop('id', axis = 'columns', inplace = True)
+full_dataframe.drop('index', axis = 'columns', inplace = True)
+
+# tworzenie kolumny "pora dnia":
+full_dataframe['time_of_day'] = ['0-6' if datetime.datetime.fromtimestamp(i).hour in range(0, 6) else '6-9' if datetime.datetime.fromtimestamp(i).hour in range(6, 9) else '9-14' if datetime.datetime.fromtimestamp(i).hour in range(9, 14) else '14-18' if datetime.datetime.fromtimestamp(i).hour in range(14, 18) else '18-24' for i in full_dataframe['unix_time']]
+
+# kolumna "dzień":
+full_dataframe['day'] = [datetime.datetime.fromtimestamp(i).day for i in full_dataframe['unix_time']]
+
+# kolumna "miesiąc":
+full_dataframe['month'] = [datetime.datetime.fromtimestamp(i).month for i in full_dataframe['unix_time']]
+# uwaga, różne miesiące mają różną liczbę poszczególnych dni tygodnia, np. jesli w jakimś miesiącu jest pięć wtorków a w innym tylko cztery to prawdopodobieństwo wypadku we wtorek w tym pierwszym miesiącu wyjdzie wyższe niż w tym drugim po zagregowaniu według dnia tygodnia mimo że wcale tak nie jest
+
+# kolumna "rok":
+full_dataframe['year'] = [datetime.datetime.fromtimestamp(i).year for i in full_dataframe['unix_time']]
+
+# czas uniksowy już nie będzie potrzebny:
+full_dataframe.drop('unix_time', axis = 'columns', inplace = True)
+
+# długości kolejnych miesięcy do dorabiania zerowych obserwacji:
+month_lengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+# dorabianie zerowych obserwacji w brakujących jednostkach czasu:
+for i in range(len(month_lengths)):
+    full_dataframe = pd.concat([full_dataframe, pd.DataFrame({'gps_x': [None] * month_lengths[i] * 5, 'gps_y': [None] * month_lengths[i] * 5, 'time_of_day': ['0-6'] * month_lengths[i] + ['6-9'] * month_lengths[i] + ['9-14'] * month_lengths[i] + ['14-18'] * month_lengths[i] + ['18-24'] * month_lengths[i], 'day': [x for x in range(1, month_lengths[i] + 1)] * 5, 'month': [i + 1] * month_lengths[i] * 5, 'year': [2024] * month_lengths[i] * 5})], ignore_index = True)
+
+# usuwanie duplikatów:
+full_dataframe.drop_duplicates(subset = ['time_of_day', 'day', 'month', 'year'], keep = 'first', inplace = True, ignore_index = True)
+# jeśli jest w danej jednostce czasu (przedział godzinowy danego dnia) jakiś wypadek to obserwacja zerowa z końca datafrejmu się usunie, również wiele wypadków w tej samej jednostce czasu się usunie i zostanie jeden dzięki czemu będzie można zrobić zero-jedynkowe obserwacje
+
+# zamiana lokalizacji na zero-jedynkowe obserwacje:
+full_dataframe.drop('gps_x', axis = 'columns', inplace = True) # szerokości nie potrzebujemy
+full_dataframe['gps_y'] = [0 if str(x) == 'nan' else 1 for x in full_dataframe['gps_y']] # wysokość dychotomizujemy
+full_dataframe.rename(columns = {'gps_y': 'collision'}, inplace = True) # zmieniamy nazwę kolumny
+
+# lista dni wolnych (z internetu):
+holidays = ['1-1-2018', '6-1-2018', '1-4-2018', '2-4-2018', '1-5-2018', '3-5-2018', '20-5-2018', '31-5-2018', '15-8-2018', '1-11-2018', '11-11-2018', '12-11-2018', '25-12-2018', '26-12-2018', '1-1-2019', '6-1-2019', '21-4-2019', '22-4-2019', '1-5-2019', '3-5-2019', '9-6-2019', '20-6-2019', '15-8-2019', '1-11-2019', '11-11-2019', '25-12-2019', '26-12-2019', '1-1-2020', '6-1-2020', '12-4-2020', '13-4-2020', '1-5-2020', '3-5-2020', '31-5-2020', '11-6-2020', '15-8-2020', '1-11-2020', '11-11-2020', '25-12-2020', '26-12-2020', '1-1-2021', '6-1-2021', '4-4-2021', '5-4-2021', '1-5-2021', '3-5-2021', '23-5-2021', '3-6-21', '15-8-2021', '1-11-2021', '11-11-2021', '25-12-2021', '26-12-2021', '1-1-2022', '6-1-2022', '17-4-2022', '18-4-2022', '1-5-2022', '3-5-2022', '5-6-2022', '16-6-2022', '15-8-2022', '1-11-2022', '11-11-2022', '25-12-2022', '26-12-2022', '1-1-2023', '6-1-2023', '9-4-2023', '10-4-2023', '1-5-2023', '3-5-2023', '28-5-2023', '8-6-2023', '15-8-2023', '1-11-2023', '11-11-2023', '25-12-2023', '26-12-2023', '1-1-2024', '6-1-2024', '31-3-2024', '1-4-2024', '1-5-2024', '3-5-2024', '19-5-2024', '30-5-2024', '15-8-2024', '1-11-2024', '11-11-2024', '25-12-2024', '26-12-2024']
+
+# lista dni zaczynających długie weekendy (z internetu):
+long_weekend = ['31-3-2018', '28-4-2018', '3-5-2018', '31-5-2018', '1-11-2018', '10-11-2018', '22-12-2018', '20-4-2019', '1-5-2019', '20-6-2019', '15-8-2019', '1-3-2019',  '1-11-2019', '9-11-2019', '25-12-2019', '4-1-2020', '11-4-2020', '1-5-2020', '11-6-2020', '25-12-2020', '1-1-2021', '3-4-2021', '1-5-2021', '3-6-2020', '30-10-2020', '11-11-2021', '6-1-2022', '16-4-2022', '30-5-2022', '16-6-2022', '13-8-2022', '29-10-2022', '11-11-2022', '24-12-2022', '6-1-2023', '8-4-2023', '29-4-2023', '8-6-2023', '12-8-2023', '23-12-2023', '30-12-2023', '30-3-2024', '1-5-2024', '30-5-2024', '15-8-2024', '1-11-2024', '9-11-2024', '25-12-2024']
+
+# kolumna "dzień tygodnia":
+full_dataframe['weekday'] = ['9' if f'{full_dataframe['day'][i]}-{full_dataframe['month'][i]}-{full_dataframe['year'][i]}' in long_weekend else '8' if f'{full_dataframe['day'][i]}-{full_dataframe['month'][i]}-{full_dataframe['year'][i]}' in holidays else str(datetime.date(int(full_dataframe['year'][i]), int(full_dataframe['month'][i]), int(full_dataframe['day'][i])).weekday() + 1) for i in range(len(full_dataframe['year']))]
+# gdyby tutaj pouzgadniać te typy wcześniej to może szybciej by się to robiło chociaż to i tak jest prawie od razu
