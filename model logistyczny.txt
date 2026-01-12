@@ -1,0 +1,19 @@
+from sklearn.linear_model import LogisticRegression
+
+model = LogisticRegression()
+model.fit(full_dataframe[full_dataframe.columns[1:72]], full_dataframe['collision'])
+
+# tu są współczynniki modeu:
+model.coef_[0]
+model.intercept_
+
+# prawdopodobieństwo to będzie p = e^logit / (1 + e^logit)
+
+
+# to będzie do testowania tak pobieżnie...
+
+collision_pred = model.predict(full_dataframe[full_dataframe.columns[1:72]])
+  
+from sklearn.metrics import classification_report
+
+print(classification_report(full_dataframe['collision'], collision_pred))
