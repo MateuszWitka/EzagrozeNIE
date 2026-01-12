@@ -6,8 +6,7 @@ import datetime
 # to były dane do testowania:
 #data = pd.read_csv(r'C:\Users\Lenovo\Desktop\systemy informatyczne\ćw 7\wypadki_lubuskie_2024.csv', index_col = 0)
 
-full_dataframe.drop('id', axis = 'columns', inplace = True)
-full_dataframe.drop('index', axis = 'columns', inplace = True)
+full_dataframe.drop(['id', 'index'], axis = 'columns', inplace = True)
 
 # tworzenie kolumny "pora dnia":
 full_dataframe['time_of_day'] = ['0-6' if datetime.datetime.fromtimestamp(i).hour in range(0, 6) else '6-9' if datetime.datetime.fromtimestamp(i).hour in range(6, 9) else '9-14' if datetime.datetime.fromtimestamp(i).hour in range(9, 14) else '14-18' if datetime.datetime.fromtimestamp(i).hour in range(14, 18) else '18-24' for i in full_dataframe['unix_time']]
@@ -50,3 +49,18 @@ long_weekend = ['31-3-2018', '28-4-2018', '3-5-2018', '31-5-2018', '1-11-2018', 
 # kolumna "dzień tygodnia":
 full_dataframe['weekday'] = ['9' if f'{full_dataframe['day'][i]}-{full_dataframe['month'][i]}-{full_dataframe['year'][i]}' in long_weekend else '8' if f'{full_dataframe['day'][i]}-{full_dataframe['month'][i]}-{full_dataframe['year'][i]}' in holidays else str(datetime.date(int(full_dataframe['year'][i]), int(full_dataframe['month'][i]), int(full_dataframe['day'][i])).weekday() + 1) for i in range(len(full_dataframe['year']))]
 # gdyby tutaj pouzgadniać te typy wcześniej to może szybciej by się to robiło chociaż to i tak jest prawie od razu
+
+# dni i lata nie będą brane pod uwagę w predykcji bo konkretne dni dałyby overfit a lata się nie powtarzają więc predykcja nie ma sensu:
+full_dataframe.drop(['day', 'year'], axis = 'columns', inplace = True)
+
+# dummy variables do regresji logistycznej:
+full_dataframe = pd.get_dummies(full_dataframe, columns = ['time_of_day', 'weekday', 'month'])
+
+# interakcje dnia tygodnia z porą dnia:
+for i in range(1, 6):
+    for j in range(6, 15):
+        full_dataframe[full_dataframe.columns[j] + '*' + full_dataframe.columns[i]] = full_dataframe[full_dataframe.columns[i]] * full_dataframe[full_dataframe.columns[j]]
+# uwaga, interakcje zdefiniowane na podstawie kolejności nazw kolumn, zmiany w tworzeniu dummy variables mogą popsuć tą kolejność
+
+
+
