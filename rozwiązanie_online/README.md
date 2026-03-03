@@ -64,4 +64,3 @@ e-ZagrożeNIE to aplikacja webowa stworzona w języku Python z wykorzystaniem fr
 Project developed as part of university coursework at the Faculty of Mathematics and Computer Science (WMI), Adam Mickiewicz University in Poznan.
 Projekt przygotowany w ramach zajęć na Wydziale Matematyki i Informatyki (WMI) Uniwersytetu im. Adama Mickiewicza w Poznaniu.
 
-## Authors: Rafał Bartosik, Paweł Kopytek, Mateusz Witkowski, Aleks Stępniak, Miłosz Przymusiński
